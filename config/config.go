@@ -10,15 +10,17 @@ import (
 )
 
 const (
-	flagAggregator     = "rollkit.aggregator"
-	flagDAAddress      = "rollkit.da_address"
-	flagBlockTime      = "rollkit.block_time"
-	flagDABlockTime    = "rollkit.da_block_time"
-	flagDAStartHeight  = "rollkit.da_start_height"
-	flagLight          = "rollkit.light"
-	flagTrustedHash    = "rollkit.trusted_hash"
-	flagLazyAggregator = "rollkit.lazy_aggregator"
-	flagDAGasPrice     = "rollkit.da_gas_price"
+	flagAggregator      = "rollkit.aggregator"
+	flagDAAddress       = "rollkit.da_address"
+	flagBlockTime       = "rollkit.block_time"
+	flagDABlockTime     = "rollkit.da_block_time"
+	flagDAStartHeight   = "rollkit.da_start_height"
+	flagLight           = "rollkit.light"
+	flagTrustedHash     = "rollkit.trusted_hash"
+	flagLazyAggregator  = "rollkit.lazy_aggregator"
+	flagDAGasPrice      = "rollkit.da_gas_price"
+	flagDAGasMultiplier = "rollkit.da_gas_multiplier"
+	flagDANamespace     = "rollkit.da_namespace"
 )
 
 // NodeConfig stores Rollkit node configuration.
@@ -37,6 +39,8 @@ type NodeConfig struct {
 	LazyAggregator     bool                         `mapstructure:"lazy_aggregator"`
 	Instrumentation    *cmcfg.InstrumentationConfig `mapstructure:"instrumentation"`
 	DAGasPrice         float64                      `mapstructure:"da_gas_price"`
+	DAGasMultiplier    float64                      `mapstructure:"da_gas_multiplier"`
+	DANamespace        string                       `mapstructure:"da_namespace"`
 }
 
 // HeaderConfig allows node to pass the initial trusted header hash to start the header exchange service
@@ -52,6 +56,8 @@ type BlockManagerConfig struct {
 	DABlockTime time.Duration `mapstructure:"da_block_time"`
 	// DAStartHeight allows skipping first DAStartHeight-1 blocks when querying for blocks.
 	DAStartHeight uint64 `mapstructure:"da_start_height"`
+	// DAMempoolTTL is the number of DA blocks until transaction is dropped from the mempool.
+	DAMempoolTTL uint64 `mapstructure:"da_mempool_ttl"`
 }
 
 // GetNodeConfig translates Tendermint's configuration into Rollkit configuration.
@@ -94,6 +100,8 @@ func (nc *NodeConfig) GetViperConfig(v *viper.Viper) error {
 	nc.Light = v.GetBool(flagLight)
 	nc.TrustedHash = v.GetString(flagTrustedHash)
 	nc.DAGasPrice = v.GetFloat64(flagDAGasPrice)
+	nc.DAGasMultiplier = v.GetFloat64(flagDAGasMultiplier)
+	nc.DANamespace = v.GetString(flagDANamespace)
 	return nil
 }
 
@@ -108,6 +116,8 @@ func AddFlags(cmd *cobra.Command) {
 	cmd.Flags().Duration(flagBlockTime, def.BlockTime, "block time (for aggregator mode)")
 	cmd.Flags().Duration(flagDABlockTime, def.DABlockTime, "DA chain block time (for syncing)")
 	cmd.Flags().Float64(flagDAGasPrice, def.DAGasPrice, "DA gas price for blob transactions")
+	cmd.Flags().Float64(flagDAGasMultiplier, def.DAGasMultiplier, "DA gas price multiplier for blob transaction auto-resubmission")
+	cmd.Flags().String(flagDANamespace, def.DANamespace, "DA namespace to submit blob transactions")
 	cmd.Flags().Uint64(flagDAStartHeight, def.DAStartHeight, "starting DA block height (for syncing)")
 	cmd.Flags().Bool(flagLight, def.Light, "run light client")
 	cmd.Flags().String(flagTrustedHash, def.TrustedHash, "initial trusted hash to start the header exchange service")
