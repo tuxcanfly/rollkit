@@ -10,6 +10,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
+	"github.com/rollkit/go-da"
 	goDA "github.com/rollkit/go-da"
 	"github.com/rollkit/rollkit/third_party/log"
 	"github.com/rollkit/rollkit/types"
@@ -30,21 +31,6 @@ var (
 
 	// ErrBlobSizeOverLimit is used to indicate that the blob size is over limit
 	ErrBlobSizeOverLimit = errors.New("blob: over size limit")
-
-	// ErrTxTimedout is the error message returned by the DA when mempool is congested
-	ErrTxTimedout = errors.New("timed out waiting for tx to be included in a block")
-
-	// ErrTxAlreadyInMempool is  the error message returned by the DA when tx is already in mempool
-	ErrTxAlreadyInMempool = errors.New("tx already in mempool")
-
-	// ErrTxIncorrectAccountSequence is the error message returned by the DA when tx has incorrect sequence
-	ErrTxIncorrectAccountSequence = errors.New("incorrect account sequence")
-
-	// ErrTxSizeTooBig is the error message returned by the DA when tx size is too big
-	ErrTxSizeTooBig = errors.New("tx size is too big")
-
-	//ErrTxTooLarge is the err message returned by the DA when tx size is too large
-	ErrTxTooLarge = errors.New("tx too large")
 
 	// ErrContextDeadline is the error message returned by the DA when context deadline exceeds
 	ErrContextDeadline = errors.New("context deadline")
@@ -157,14 +143,9 @@ func (dac *DAClient) SubmitBlocks(ctx context.Context, blocks []*types.Block, ma
 	if err != nil {
 		status := StatusError
 		switch {
-		case strings.Contains(err.Error(), ErrTxTimedout.Error()):
+		case errors.Is(err, da.ErrGasFee):
 			status = StatusNotIncludedInBlock
-		case strings.Contains(err.Error(), ErrTxAlreadyInMempool.Error()):
-			status = StatusAlreadyInMempool
-		case strings.Contains(err.Error(), ErrTxIncorrectAccountSequence.Error()):
-			status = StatusAlreadyInMempool
-		case strings.Contains(err.Error(), ErrTxSizeTooBig.Error()),
-			strings.Contains(err.Error(), ErrTxTooLarge.Error()):
+		case errors.Is(err, da.ErrBlobSize):
 			status = StatusTooBig
 		case strings.Contains(err.Error(), ErrContextDeadline.Error()):
 			status = StatusContextDeadline
